@@ -9,7 +9,66 @@
 #include <set>
 #include <algorithm>
 #include <stdlib.h>
-#include <stdarg.h> 
+#include <stdarg.h>
+
+class BitVector {
+private:
+	size_t _value;
+	size_t _sz;
+public:
+	BitVector(size_t sz = 0) {
+		_value = 0;
+		_sz = sz;
+	}
+	size_t size() {
+		return _sz;
+	}
+	void push_back(bool val) {
+		_value |= (1LL << (63 - _sz)) * val;
+		++_sz;
+	}
+	void pop_back() {
+		if (this->operator[](_sz - 1))
+			_value ^= 1LL << (64 - _sz);
+		--_sz;
+	}
+	void push_front(bool val) {
+		_value = (_value >> 1) | ((1LL << 63) * val);
+		++_sz;
+	}
+	void set(size_t ind, bool val) {
+		if (this->operator[](ind))
+			_value ^= 1LL << (63 - ind);
+		_value |= (1LL << (63 - ind)) * val;
+	}
+	void set_value(size_t new_val) {
+		_value = new_val;
+	}
+	bool empty() {
+		return _sz == 0;
+	}
+	size_t value() {
+		return _value;
+	}
+	void reverse() {
+		int i = 0, j = _sz - 1;
+		while (i < j) {
+			bool tmp = this->operator[](i);
+			set(i, this->operator[](j));
+			set(j, tmp);
+		}
+	}
+
+	bool operator[](size_t ind) {
+		return (_value >> (63 - ind)) & 1;
+	}
+	bool operator==(BitVector& a) {
+		return _value == a.value();
+	}
+	bool operator<(BitVector& a) {
+		return _value < a.value();
+	}
+};
 
 std::vector<uint8_t> get_file_bytes(std::string path) {
 	std::ifstream file_stream(path, std::fstream::binary);
@@ -89,9 +148,9 @@ Node* generate_tree(std::vector<uint8_t>& file_buff) {
 	return prior.begin()->second;
 }
 
-std::vector<std::vector<bool>> generate_table(Node* p) {
-	std::vector<std::vector<bool>> table(256);
-	std::vector<bool> curr;
+std::vector<BitVector> generate_table(Node* p) {
+	std::vector<BitVector> table(256);
+	BitVector curr;
 	auto dfs = [&](Node* p, auto f) {
 		if (p->is_leaf()) {
 			table[p->val] = curr;
@@ -113,10 +172,10 @@ std::vector<std::vector<bool>> generate_table(Node* p) {
 	return table;
 }
 
-std::vector<std::pair<uint8_t, std::vector<bool>>> generate_table(std::vector<uint8_t>& file_buff) {
+std::vector<std::pair<uint8_t, BitVector>> generate_table(std::vector<uint8_t>& file_buff) {
 	Node* p = generate_tree(file_buff);
-	std::vector<std::vector<bool>> table = generate_table(p);
-	std::vector<std::pair<uint8_t, std::vector<bool>>> filtered;
+	std::vector<BitVector> table = generate_table(p);
+	std::vector<std::pair<uint8_t, BitVector>> filtered;
 	for (int i = 0; i < 256; ++i) {
 		if (table[i].empty()) continue;
 		filtered.push_back(std::make_pair(i, table[i]));
@@ -124,19 +183,17 @@ std::vector<std::pair<uint8_t, std::vector<bool>>> generate_table(std::vector<ui
 	return filtered;
 }
 
-std::vector<bool> to_gamma_code(std::vector<bool>& bits) {
-	std::vector<bool> added = bits;;
-	std::reverse(added.begin(), added.end());
-	added.push_back(1);
+BitVector to_gamma_code(BitVector& bits) {
+	BitVector added = bits;
+	added.push_front(1);
 	int sz = (int)added.size() - 1;
 	for (int i = 0; i < sz; ++i) {
-		added.push_back(0);
+		added.push_front(0);
 	}
-	std::reverse(added.begin(), added.end());
 	return added;
 }
 
-void write(std::ofstream& file, std::vector<bool>& bits, uint8_t& curr_byte, int& curr_pos) {
+void write(std::ofstream& file, BitVector& bits, uint8_t& curr_byte, int& curr_pos) {
 	int written = 0;
 	while (bits.size() != written) {
 		while (curr_pos < 8 && bits.size() != written) {
@@ -153,16 +210,16 @@ void write(std::ofstream& file, std::vector<bool>& bits, uint8_t& curr_byte, int
 	}
 }
 
-std::vector<bool> get_bits(size_t n, int bits_count) {
-	std::vector<bool> vec(bits_count);
+BitVector get_bits(size_t n, int bits_count) {
+	BitVector vec;
 	for (int i = 0; i < bits_count; ++i) {
-		vec[i] = (n >> (bits_count - i - 1)) & 1;
+		vec.push_back((n >> (bits_count - 1 - i)) & 1);
 	}
 	return vec;
 }
 
-void write_table(std::vector<std::pair<uint8_t, std::vector<bool>>>& huffman_table, uint8_t& curr_byte, int& curr_pos, std::ofstream& stream) {
-	std::vector<bool> bits = get_bits(huffman_table.size(), 32);
+void write_table(std::vector<std::pair<uint8_t, BitVector>>& huffman_table, uint8_t& curr_byte, int& curr_pos, std::ofstream& stream) {
+	BitVector bits = get_bits(huffman_table.size(), 32);
 	write(stream, bits, curr_byte, curr_pos);
 	for (int i = 0; i < huffman_table.size(); ++i) {
 		bits = get_bits(huffman_table[i].first, 8);
@@ -190,13 +247,13 @@ size_t get_from_n_bits(int n, uint8_t& curr_byte, int& curr_pos, std::ifstream& 
 	return val;
 }
 
-void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, std::vector<bool>>>& huffman_table, uint8_t& curr_byte, int& curr_pos) {
+void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, BitVector>>& huffman_table, uint8_t& curr_byte, int& curr_pos) {
 	std::ofstream stream(get_file_save_path("bruh"), std::fstream::trunc | std::fstream::binary);
 
 	write_table(huffman_table, curr_byte, curr_pos, stream);
-	std::vector<bool> bits = get_bits(file_buff.size(), 32);
+	BitVector bits = get_bits(file_buff.size(), 32);
 
-	std::vector<std::pair<uint8_t, std::vector<bool>*>> nums;
+	std::vector<std::pair<uint8_t, BitVector*>> nums;
 	for (int i = 0; i < huffman_table.size(); ++i) {
 		nums.push_back(std::make_pair(huffman_table[i].first, &huffman_table[i].second));
 	}
@@ -204,7 +261,7 @@ void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, s
 	
 	write(stream, bits, curr_byte, curr_pos);
 	for (int i = 0; i < file_buff.size(); ++i) {
-		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(file_buff[i], (std::vector<bool>*)nullptr));
+		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(file_buff[i], (BitVector*)nullptr));
 		write(stream, *it->second, curr_byte, curr_pos);
 	}
 	if (curr_pos != 0) {
@@ -213,8 +270,8 @@ void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, s
 	stream.close();
 }
 
-std::vector<bool> from_gamma_code(uint8_t& curr_byte, int& curr_pos, std::ifstream& stream) {
-	std::vector<bool> bits;
+BitVector from_gamma_code(uint8_t& curr_byte, int& curr_pos, std::ifstream& stream) {
+	BitVector bits;
 	int n = 0;
 	while (get_next_bit(curr_byte, curr_pos, stream) == 0) {
 		++n;
@@ -225,9 +282,9 @@ std::vector<bool> from_gamma_code(uint8_t& curr_byte, int& curr_pos, std::ifstre
 	return bits;
 }
 
-std::vector<std::pair<uint8_t, std::vector<bool>>> read_table(uint8_t& curr_byte, int& curr_pos, std::ifstream& stream) {
+std::vector<std::pair<uint8_t, BitVector>> read_table(uint8_t& curr_byte, int& curr_pos, std::ifstream& stream) {
 	int table_size = get_from_n_bits(32, curr_byte, curr_pos, stream);
-	std::vector<std::pair<uint8_t, std::vector<bool>>> table;
+	std::vector<std::pair<uint8_t, BitVector>> table;
 	for (int i = 0; i < table_size; ++i) {
 		uint8_t c = get_from_n_bits(8, curr_byte, curr_pos, stream);
 		table.push_back(std::make_pair(c, from_gamma_code(curr_byte, curr_pos, stream)));
@@ -235,20 +292,12 @@ std::vector<std::pair<uint8_t, std::vector<bool>>> read_table(uint8_t& curr_byte
 	return table;
 }
 
-size_t get_num_from_bits(std::vector<bool>& bits) {
-	size_t val = 0;
-	for (int i = bits.size() - 1; i >= 0; --i) {
-		val |= bits[i] * (1LL << (bits.size() - i - 1));
-	}
-	return val;
-}
-
 std::pair<std::vector<uint8_t>, std::string> read_unzip(uint8_t& curr_byte, int& curr_pos, std::ifstream& stream) {
-	std::vector<std::pair<uint8_t, std::vector<bool>>> table = read_table(curr_byte, curr_pos, stream);
+	std::vector<std::pair<uint8_t, BitVector>> table = read_table(curr_byte, curr_pos, stream);
 	
 	std::vector<std::pair<std::pair<size_t, int>, uint8_t>> nums;
 	for (int i = 0; i < table.size(); ++i) {
-		nums.push_back(std::make_pair(std::make_pair(get_num_from_bits(table[i].second), table[i].second.size()), table[i].first));
+		nums.push_back(std::make_pair(std::make_pair(table[i].second.value(), table[i].second.size()), table[i].first));
 	}
 	std::sort(nums.begin(), nums.end());
 
@@ -261,7 +310,7 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(uint8_t& curr_byte, int&
 	int curr_sz = 0;
 	while (buffer.size() != sz) {
 		bool bit = get_next_bit(curr_byte, curr_pos, stream);
-		curr_bits = (curr_bits << 1) | bit;
+		curr_bits |= bit * (1LL << (63 - curr_sz));
 		++curr_sz;
 		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(std::make_pair(curr_bits, curr_sz), (uint8_t)0));
 		if (it == nums.end() || it->first.first != curr_bits || it->first.second != curr_sz)
@@ -309,7 +358,7 @@ void run(std::string operation, std::string file_path) {
 		file_buff.push_back(0);
 		std::reverse(file_buff.begin(), file_buff.end());
 		
-		std::vector<std::pair<uint8_t, std::vector<bool>>> huffman_table = generate_table(file_buff);
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = generate_table(file_buff);
 
 		uint8_t curr_byte = 0;
 		int curr_pos = 0;
@@ -324,9 +373,10 @@ void run(std::string operation, std::string file_path) {
 		std::ofstream out(get_file_save_path(file_unzipped.second), std::ios::binary);
 		out.write((char*)&file_unzipped.first[0], file_unzipped.first.size());
 		out.close();
+		std::cout << "Done\n";
 	} else if (operation == "gen") {
 		std::vector<uint8_t> file_buff = get_file_bytes(file_path);
-		std::vector<std::pair<uint8_t, std::vector<bool>>> huffman_table = generate_table(file_buff);
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = generate_table(file_buff);
 
 		std::cout << "Table for encrypting bytes in a file:\n";
 		for (int i = 0; i < huffman_table.size(); ++i) {
@@ -357,7 +407,7 @@ void run(std::string operation, std::string file_path) {
 		int curr_pos = 0;
 		std::ifstream stream(file_path, std::fstream::binary);
 		stream.read((char*)&curr_byte, sizeof(curr_byte));
-		std::vector<std::pair<uint8_t, std::vector<bool>>> huffman_table = read_table(curr_byte, curr_pos, stream);
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = read_table(curr_byte, curr_pos, stream);
 		std::cout << "Unzipped table for encrypting bytes in a file:\n";
 		for (int i = 0; i < huffman_table.size(); ++i) {
 			std::cout << (int)huffman_table[i].first << " <-> ";
