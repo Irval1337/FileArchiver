@@ -6,11 +6,15 @@
 #include <atlbase.h>
 #include <atlconv.h>
 #include <format>
-#include <set>
 #include <algorithm>
 #include <stdlib.h>
 #include <stdarg.h>
+#include "BitVector.h"
+#include "HuffmanCoder.h"
+#include "FileReader.h"
+#include "FileWriter.h"
 
+<<<<<<< Updated upstream
 // Структура BitVector - фактически надстройка над целым числом, чтобы удобно работать с его битами
 class BitVector { // ПОЖАЛУЙСТА, воспринимайте его как простой vector<bool>
 private:
@@ -75,17 +79,26 @@ std::vector<uint8_t> get_file_bytes(std::string path) {
 	// Открываем поток. Флаг std::fstream::binary нужен для побайтового считывания
 	std::ifstream file_stream(path, std::fstream::binary);
 	// Проверяем, что смогли открыть файл
+=======
+std::vector<uint8_t> get_file_bytes(std::string path) {
+	std::ifstream file_stream(path, std::fstream::binary);
+>>>>>>> Stashed changes
 	if (!file_stream || !file_stream.good()) {
 		throw std::exception("Invalid file path");
 	}
 
+<<<<<<< Updated upstream
 	// С помощью магии встроенных итераторов запихиваем все байты из файла в вектор
 	std::vector<uint8_t> buff((std::istreambuf_iterator<char>(file_stream)), (std::istreambuf_iterator<char>()));
 	// Закрываем поток
+=======
+	std::vector<uint8_t> buff((std::istreambuf_iterator<char>(file_stream)), (std::istreambuf_iterator<char>()));
+>>>>>>> Stashed changes
 	file_stream.close();
 	return buff;
 }
 
+<<<<<<< Updated upstream
 // С помощью WinAPI позволяем пользователю выбрать куда сохранить файл и под каким названием
 std::string get_file_save_path(std::string extension) { // Передаем в аргументах необходимое расширение для файла
 	std::string filter = "Resulting file (*." + extension + ")0*." + extension + "0All files (*.*)0*.*0"; // Маска для фильтра
@@ -350,10 +363,83 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(uint8_t& curr_byte, int&
 	std::vector<std::pair<std::pair<size_t, int>, uint8_t>> nums; // Сделаем вектор для быстрой расшифровки байтов. Работает аналогично с write_zip
 	for (int i = 0; i < table.size(); ++i) {
 		// Элементы вектора представлены в виде ((байт в зашифрованном виде, количество битов в коде), оригинальное значение байта)
+=======
+std::string get_file_save_path(std::string extension) {
+	std::string filter = "Resulting file (*." + extension + ")0*." + extension + "0All files (*.*)0*.*0";
+	if (extension.size() == 0)
+		filter = "All files (*.*)0*.*0";
+
+	std::replace(filter.begin(), filter.end(), '0', '\0');
+
+	OPENFILENAME ofn;
+
+	char szFileName[MAX_PATH] = "";
+
+	ZeroMemory(&ofn, sizeof(ofn));
+
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrFilter = filter.c_str();
+	ofn.lpstrFile = szFileName;
+	ofn.nMaxFile = MAX_PATH;
+	ofn.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+	ofn.lpstrDefExt = extension.c_str();
+
+	GetSaveFileName(&ofn);
+	return ofn.lpstrFile;
+}
+
+void write_table(std::vector<std::pair<uint8_t, BitVector>>& huffman_table, FileWriter& writer) {
+	BitVector bits = writer.get_bits(huffman_table.size(), 32);
+	writer.write_bits(bits);
+	for (int i = 0; i < huffman_table.size(); ++i) {
+		bits = writer.get_bits(huffman_table[i].first, 8);
+		writer.write_bits(bits);
+		bits = writer.to_gamma_code(huffman_table[i].second);
+		writer.write_bits(bits);
+	}
+}
+
+void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, BitVector>>& huffman_table) {
+	FileWriter writer(get_file_save_path("bruh"));
+	write_table(huffman_table, writer);
+
+	std::vector<std::pair<uint8_t, BitVector*>> nums;
+	for (int i = 0; i < huffman_table.size(); ++i) {
+		nums.push_back(std::make_pair(huffman_table[i].first, &huffman_table[i].second));
+	}
+	std::sort(nums.begin(), nums.end());
+	
+	BitVector bits = writer.get_bits(file_buff.size(), 32);
+	writer.write_bits(bits);
+	for (int i = 0; i < file_buff.size(); ++i) {
+		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(file_buff[i], (BitVector*)nullptr));
+		writer.write_bits(*it->second);
+	}
+}
+
+std::vector<std::pair<uint8_t, BitVector>> read_table(FileReader& reader) {
+	int table_size = reader.get_from_n_bits(32);
+	std::vector<std::pair<uint8_t, BitVector>> table;
+	for (int i = 0; i < table_size; ++i) {
+		uint8_t c = reader.get_from_n_bits(8);
+		table.push_back(std::make_pair(c, reader.from_gamma_code()));
+	}
+	return table;
+}
+
+std::pair<std::vector<uint8_t>, std::string> read_unzip(std::string path) {
+	FileReader reader(path);
+	std::vector<std::pair<uint8_t, BitVector>> table = read_table(reader);
+	
+	std::vector<std::pair<std::pair<size_t, int>, uint8_t>> nums;
+	for (int i = 0; i < table.size(); ++i) {
+>>>>>>> Stashed changes
 		nums.push_back(std::make_pair(std::make_pair(table[i].second.value(), table[i].second.size()), table[i].first));
 	}
 	std::sort(nums.begin(), nums.end());
 
+<<<<<<< Updated upstream
 	std::vector<uint8_t> buffer; // В этом векторе будут храниться все байты файла
 	int sz = get_from_n_bits(32, curr_byte, curr_pos, stream); // Считаем количество зашифрованных байтов. Это ровно 32 бита
 
@@ -393,11 +479,51 @@ bool check_file(std::string path) {
 
 void run(std::string operation, std::string file_path) {
 	// Пытаемся открыть данный файл
+=======
+	std::vector<uint8_t> buffer;
+	int sz = reader.get_from_n_bits(32);
+
+	std::string extension = "";
+	int zeros = 0;
+	size_t curr_bits = 0;
+	int curr_sz = 0;
+	while (buffer.size() + extension.size() + 2 != sz) {
+		bool bit = reader.get_next_bit();
+		curr_bits |= bit * (1LL << (63 - curr_sz));
+		++curr_sz;
+		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(std::make_pair(curr_bits, curr_sz), (uint8_t)0));
+		if (it == nums.end() || it->first.first != curr_bits || it->first.second != curr_sz)
+			continue;
+		curr_bits = 0;
+		curr_sz = 0;
+		if (zeros >= 2)
+			buffer.push_back(it->second);
+		else {
+			if (it->second != 0)
+				extension.push_back(it->second);
+			else
+				++zeros;
+		}
+	}
+	return std::make_pair(buffer, extension);
+}
+
+bool check_file(std::string path) {
+	std::fstream stream(path, std::fstream::in);
+	bool is_ok = stream.is_open() && stream.good();
+	if (is_ok)
+		stream.close();
+	return is_ok;
+}
+
+void run(std::string operation, std::string file_path) {
+>>>>>>> Stashed changes
 	if (!check_file(file_path)) {
 		std::cout << "Invalid file path\n";
 		return;
 	}
 
+<<<<<<< Updated upstream
 	// is-else конструкция для разбора случаев с каждой из возможных операция
 	if (operation == "zip") { // архивация
 		std::vector<uint8_t> file_buff = get_file_bytes(file_path); // Получаем все байты из файла
@@ -442,6 +568,44 @@ void run(std::string operation, std::string file_path) {
 		std::vector<std::pair<uint8_t, BitVector>> huffman_table = generate_table(file_buff); // Генерируем таблицу
 
 		std::cout << "Table for encrypting bytes in a file:\n"; // Выводим ее в красивом формате
+=======
+	if (operation == "zip") {
+		std::vector<uint8_t> file_buff = get_file_bytes(file_path);
+
+		std::reverse(file_buff.begin(), file_buff.end());
+		file_buff.push_back(0);
+		size_t last_backslash = file_path.rfind('\\');
+		size_t ext_index = file_path.rfind('.');
+		if (ext_index > last_backslash) {
+			std::string ext = file_path.substr(ext_index + 1);
+			for (int i = ext.size() - 1; i >= 0; --i) {
+				file_buff.push_back((uint8_t)ext[i]);
+			}
+		}
+		file_buff.push_back(0);
+		std::reverse(file_buff.begin(), file_buff.end());
+
+		HuffmanCoder coder;
+		coder.generate_table(file_buff);
+		
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = coder.get_table();
+		write_zip(file_buff, huffman_table);
+		std::cout << "Done\n";
+	} else if (operation == "unzip") {
+		std::pair<std::vector<uint8_t>, std::string> file_unzipped = read_unzip(file_path);
+		std::ofstream out(get_file_save_path(file_unzipped.second), std::ios::binary);
+		out.write((char*)&file_unzipped.first[0], file_unzipped.first.size());
+		out.close();
+		std::cout << "Done\n";
+	} else if (operation == "gen") {
+		std::vector<uint8_t> file_buff = get_file_bytes(file_path);
+
+		HuffmanCoder coder;
+		coder.generate_table(file_buff);
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = coder.get_table();
+
+		std::cout << "Table for encrypting bytes in a file:\n";
+>>>>>>> Stashed changes
 		for (int i = 0; i < huffman_table.size(); ++i) {
 			std::cout << (int)huffman_table[i].first << " <-> ";
 			for (int j = 0; j < huffman_table[i].second.size(); ++j) {
@@ -451,6 +615,7 @@ void run(std::string operation, std::string file_path) {
 		}
 		std::cout << "Do you want to save it to a file? (y/n)\n";
 		char c;
+<<<<<<< Updated upstream
 		std::cin >> c; // Проверяем, хочет ли пользователь сохранить ее в файл
 		if (c == 'y' || (c ^ 'y') == 32) { // c == 'y' || c == 'Y'
 			std::ofstream stream(get_file_save_path("bruhtb"), std::fstream::trunc | std::fstream::binary); // Поток для записи таблиц, расширение - bruhtb
@@ -461,10 +626,17 @@ void run(std::string operation, std::string file_path) {
 				stream.write((char*)&curr_byte, sizeof(uint8_t));
 			}
 			stream.close(); // Закроем поток
+=======
+		std::cin >> c;
+		if (c == 'y' || (c ^ 'y') == 32) {
+			FileWriter writer(get_file_save_path("bruhtb"));
+			write_table(huffman_table, writer);
+>>>>>>> Stashed changes
 			std::cout << "Done\n";
 		} else {
 			return;
 		}
+<<<<<<< Updated upstream
 	} else if (operation == "regen") { // Получение таблицы Хаффмана из файла
 		uint8_t curr_byte = 0; // Заводим переменные curr_byte и curr_pos для побитового чтения из файла
 		int curr_pos = 0;
@@ -472,6 +644,12 @@ void run(std::string operation, std::string file_path) {
 		stream.read((char*)&curr_byte, sizeof(curr_byte)); // Считываем первый байт
 		std::vector<std::pair<uint8_t, BitVector>> huffman_table = read_table(curr_byte, curr_pos, stream); // Считываем таблицу Хаффмана
 		std::cout << "Unzipped table for encrypting bytes in a file:\n"; // Выводим ее в красивом формате
+=======
+	} else if (operation == "regen") {
+		FileReader reader(file_path);
+		std::vector<std::pair<uint8_t, BitVector>> huffman_table = read_table(reader);
+		std::cout << "Unzipped table for encrypting bytes in a file:\n";
+>>>>>>> Stashed changes
 		for (int i = 0; i < huffman_table.size(); ++i) {
 			std::cout << (int)huffman_table[i].first << " <-> ";
 			for (int j = 0; j < huffman_table[i].second.size(); ++j) {
@@ -479,30 +657,48 @@ void run(std::string operation, std::string file_path) {
 			}
 			std::cout << '\n';
 		}
+<<<<<<< Updated upstream
 		stream.close(); // Закрываем поток
 	} else { // Неизвестная операция
+=======
+	} else {
+>>>>>>> Stashed changes
 		std::cout << "Invalid operation type\n";
 		return;
 	}
 }
 
+<<<<<<< Updated upstream
 // Точка входа в программу. Аргументы argc и argv нужны для запуска через консоль. argc - количество аргументов, argv - сами аргументы в виде строк.
 // Если программа запускалась не через консоль/без аргументов, то argc = 1, argv - путь до исполняемого файла
 int main(int argc, char* argv[]) {
 	// Поддержка русских символов
+=======
+int main(int argc, char* argv[]) {
+>>>>>>> Stashed changes
 	setlocale(LC_ALL, "Russian");
 
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
+<<<<<<< Updated upstream
 	
 	if (argc == 3) { // Если нам дали 2 доп. аргумента, то выполним необходимую операцию
 		run(argv[1], argv[2]);
 	}
 	if (argc != 3 && argc > 1) { // Если количество доп. аргументов отличается от 2, то выведем информацию об ошибке
+=======
+
+
+	if (argc == 3) {
+		run(argv[1], argv[2]);
+	}
+	if (argc != 3 && argc > 1) {
+>>>>>>> Stashed changes
 		std::cout << "Invalid args provided\n";
 		return 0;
 	}
 
+<<<<<<< Updated upstream
 	while (true) { // Бесконечный цикл
 		std::string operation, path; // Получим операцию и путь до файла
 		std::cin >> operation;
@@ -516,5 +712,21 @@ int main(int argc, char* argv[]) {
 		if (path[0] == '\"') path.erase(path.begin()); // Удаляем " в начале
 		if (*path.rbegin() == '\"') path.pop_back(); // Удаляем " в конце
 		run(operation, path); // Запустим основуню функцию
+=======
+	while (true) {
+		std::string operation, path;
+		std::cin >> operation;
+		if (operation == "?") {
+			std::cout << "zip - file archiving using the Huffman algorithm\nunzip - file dearchiving\ngen - table generation for coding\nregen - retrieving a table from a file\n";
+			continue;
+		}
+		std::cin.ignore();
+		std::getline(std::cin, path);
+
+		if (path[0] == '\"') path.erase(path.begin());
+		if (*path.rbegin() == '\"') path.pop_back();
+
+		run(operation, path);
+>>>>>>> Stashed changes
 	}
 }
