@@ -489,6 +489,12 @@ void run(std::string operation, std::string file_path) {
 // Точка входа в программу. Аргументы argc и argv нужны для запуска через консоль. argc - количество аргументов, argv - сами аргументы в виде строк.
 // Если программа запускалась не через консоль/без аргументов, то argc = 1, argv - путь до исполняемого файла
 int main(int argc, char* argv[]) {
+	// Поддержка русских символов
+	setlocale(LC_ALL, "Russian");
+
+	SetConsoleCP(1251);
+	SetConsoleOutputCP(1251);
+	
 	if (argc == 3) { // Если нам дали 2 доп. аргумента, то выполним необходимую операцию
 		run(argv[1], argv[2]);
 	}
