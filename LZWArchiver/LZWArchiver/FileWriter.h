@@ -18,17 +18,37 @@ public:
 		_stream.close();
 	}
 
-	std::pair<BitVector, BitVector> to_gamma_code(BitVector& bits) {
-		BitVector added1 = bits, added2;
-		added2.push_front(1);
-		int sz = (int)added1.size();
+	BitVector to_gamma_code(BitVector& bits) {
+		BitVector added;
+		int sz = (int)bits.size();
 		for (int i = 0; i < sz; ++i) {
-			added2.push_front(0);
+			added.push_back(0);
 		}
-		return { added2, added1 };
+		added.push_back(1);
+		for (int i = 0; i < bits.size(); ++i) {
+			added.push_back(bits[i]);
+		}
+		
+		return added;
 	}
 
-	void write_bits(BitVector& bits) {
+	BitVector to_delta_code(size_t x) {
+		BitVector x_bits, len_bits;
+		for (int i = log2(x); i >= 0; --i) {
+			x_bits.push_back((x >> i) & 1);
+		}
+		for (int i = log2(x_bits.size()); i >= 0; --i) {
+			len_bits.push_back((x_bits.size() >> i) & 1);
+		}
+
+		BitVector res = to_gamma_code(len_bits);
+		for (int i = 0; i < x_bits.size(); ++i) {
+			res.push_back(x_bits[i]);
+		}
+		return res;
+	}
+
+	void write_bits(BitVector bits) {
 		int written = 0;
 		while (bits.size() != written) {
 			while (_curr_pos < 8 && bits.size() != written) {

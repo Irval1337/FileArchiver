@@ -54,8 +54,9 @@ void write_table(std::vector<std::pair<uint8_t, BitVector>>& huffman_table, File
 	for (int i = 0; i < huffman_table.size(); ++i) {
 		bits = writer.get_bits(huffman_table[i].first, 8);
 		writer.write_bits(bits);
-		bits = writer.to_gamma_code(huffman_table[i].second);
-		writer.write_bits(bits);
+		auto bits2 = writer.to_gamma_code(huffman_table[i].second);
+		writer.write_bits(bits2.first);
+		writer.write_bits(bits2.second);
 	}
 }
 

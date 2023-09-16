@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33829.357
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LZWArchiver", "LZWArchiver\LZWArchiver.vcxproj", "{449DA22A-6F99-4A60-A45C-D13C0A556003}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Debug|x64.ActiveCfg = Debug|x64
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Debug|x64.Build.0 = Debug|x64
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Debug|x86.ActiveCfg = Debug|Win32
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Debug|x86.Build.0 = Debug|Win32
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Release|x64.ActiveCfg = Release|x64
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Release|x64.Build.0 = Release|x64
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Release|x86.ActiveCfg = Release|Win32
+		{449DA22A-6F99-4A60-A45C-D13C0A556003}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1C66F449-EB53-41D9-B191-DBC8C9CB8DAA}
+	EndGlobalSection
+EndGlobal
