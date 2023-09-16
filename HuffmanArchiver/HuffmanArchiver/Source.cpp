@@ -68,7 +68,7 @@ void write_zip(std::vector<uint8_t>& file_buff, std::vector<std::pair<uint8_t, B
 		nums.push_back(std::make_pair(huffman_table[i].first, &huffman_table[i].second));
 	}
 	std::sort(nums.begin(), nums.end());
-	
+
 	BitVector bits = writer.get_bits(file_buff.size(), 32);
 	writer.write_bits(bits);
 	for (int i = 0; i < file_buff.size(); ++i) {
@@ -90,7 +90,7 @@ std::vector<std::pair<uint8_t, BitVector>> read_table(FileReader& reader) {
 std::pair<std::vector<uint8_t>, std::string> read_unzip(std::string path) {
 	FileReader reader(path);
 	std::vector<std::pair<uint8_t, BitVector>> table = read_table(reader);
-	
+
 	std::vector<std::pair<std::pair<size_t, int>, uint8_t>> nums;
 	for (int i = 0; i < table.size(); ++i) {
 		nums.push_back(std::make_pair(std::make_pair(table[i].second.value(), table[i].second.size()), table[i].first));
@@ -108,7 +108,7 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(std::string path) {
 		bool bit = reader.get_next_bit();
 		curr_bits |= bit * (1LL << (63 - curr_sz));
 		++curr_sz;
-		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(std::make_pair(curr_bits, curr_sz), (uint8_t)0)); 
+		auto it = std::lower_bound(nums.begin(), nums.end(), std::make_pair(std::make_pair(curr_bits, curr_sz), (uint8_t)0));
 		if (it == nums.end() || it->first.first != curr_bits || it->first.second != curr_sz)
 			continue;
 		curr_bits = 0;
@@ -157,7 +157,7 @@ void run(std::string operation, std::string file_path) {
 
 		HuffmanCoder coder;
 		coder.generate_table(file_buff);
-		
+
 		std::vector<std::pair<uint8_t, BitVector>> huffman_table = coder.get_table();
 		write_zip(file_buff, huffman_table);
 		std::cout << "Done\n";
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]) {
 
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
-	
+
 	if (argc == 3) {
 		run(argv[1], argv[2]);
 	}
