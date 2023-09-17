@@ -21,13 +21,13 @@ void Trie::add(std::vector<uint8_t>::iterator itBeg, std::vector<uint8_t>::itera
 	*start->get_count() += 1;
 	uint8_t curr_byte = *itBeg;
 
-	if (*(start->get_next() + curr_byte) == nullptr)
-		*(start->get_next() + curr_byte) = new TrieNode(curr_byte);
+	if (start->get_next()->count(curr_byte) == 0)
+		start->get_next()->insert(std::make_pair(curr_byte, new TrieNode(curr_byte)));
 
 	auto tmpIt = itBeg;
 	tmpIt++;
 
-	add(tmpIt, itEnd, code, *(start->get_next() + curr_byte));
+	add(tmpIt, itEnd, code, start->get_next()->operator[](curr_byte));
 }
 
 TrieNode* Trie::find(std::vector<uint8_t>::iterator itBeg, std::vector<uint8_t>::iterator itEnd, TrieNode* start) {
@@ -38,11 +38,11 @@ TrieNode* Trie::find(std::vector<uint8_t>::iterator itBeg, std::vector<uint8_t>:
 		return *start->get_ends() == 0 ? nullptr : start;
 
 	uint8_t curr_byte = *itBeg;
-	if (*(start->get_next() + curr_byte) == nullptr) return nullptr;
+	if (start->get_next()->count(curr_byte) == 0) return nullptr;
 
 	auto tmpIt = itBeg;
 	tmpIt++;
-	return find(tmpIt, itEnd, *(start->get_next() + curr_byte));
+	return find(tmpIt, itEnd, start->get_next()->operator[](curr_byte));
 }
 
 void Trie::clear() {
