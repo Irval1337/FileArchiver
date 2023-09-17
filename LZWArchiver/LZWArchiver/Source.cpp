@@ -293,11 +293,4 @@ int main(int argc, char* argv[]) {
 
 		run(operation, path, mode == "1");
 	}
-
-	/*FileWriter w("C:\\1\\3.jpg");
-	FileReader r("C:\\1\\2.txt");
-	read_unzip(r, w, true);*/
-	/*auto bytes = get_file_bytes("C:\\1\\555.jpg");
-	FileWriter w("C:\\1\\2.txt");
-	write_zip(bytes, w, false);*/
 }
