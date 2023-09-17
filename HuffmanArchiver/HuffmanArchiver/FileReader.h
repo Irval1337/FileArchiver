@@ -27,8 +27,8 @@ public:
 		return val;
 	}
 
-	size_t get_from_n_bits(int n) {
-		size_t val = 0;
+	uint64_t get_from_n_bits(int n) {
+		uint64_t val = 0;
 		for (int i = 0; i < n; ++i) {
 			val |= get_next_bit() * (1LL << (n - i - 1));
 		}

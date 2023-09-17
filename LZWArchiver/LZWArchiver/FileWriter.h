@@ -32,7 +32,7 @@ public:
 		return added;
 	}
 
-	BitVector to_delta_code(size_t x) {
+	BitVector to_delta_code(uint64_t x) {
 		BitVector x_bits, len_bits;
 		for (int i = log2(x); i >= 0; --i) {
 			x_bits.push_back((x >> i) & 1);
@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	BitVector get_bits(size_t n, int bits_count) {
+	BitVector get_bits(uint64_t n, int bits_count) {
 		BitVector vec;
 		for (int i = 0; i < bits_count; ++i) {
 			vec.push_back((n >> (bits_count - 1 - i)) & 1);

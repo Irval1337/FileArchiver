@@ -4,14 +4,14 @@
 
 class BitVector {
 private:
-	std::vector<size_t> _value;
-	size_t _sz;
+	std::vector<uint64_t> _value;
+	uint64_t _sz;
 public:
 	BitVector() {
 		_value.push_back(0);
 		_sz = 0;
 	}
-	size_t size() {
+	uint64_t size() {
 		return _sz;
 	}
 	void push_back(bool val) {
@@ -24,11 +24,11 @@ public:
 	bool empty() {
 		return _sz == 0;
 	}
-	std::vector<size_t> value() {
+	std::vector<uint64_t> value() {
 		return _value;
 	}
 
-	bool operator[](size_t ind) {
+	bool operator[](uint64_t ind) {
 		int j = ind / 64;
 		return (_value[j] >> (63 - (ind - 64 * j))) & 1;
 	}

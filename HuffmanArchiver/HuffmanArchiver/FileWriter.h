@@ -45,7 +45,7 @@ public:
 		}
 	}
 
-	BitVector get_bits(size_t n, int bits_count) {
+	BitVector get_bits(uint64_t n, int bits_count) {
 		BitVector vec;
 		for (int i = 0; i < bits_count; ++i) {
 			vec.push_back((n >> (bits_count - 1 - i)) & 1);

@@ -230,8 +230,8 @@ void run(std::string operation, std::string file_path, bool mode) {
 
 		std::reverse(file_buff.begin(), file_buff.end());
 		file_buff.push_back(0);
-		size_t last_backslash = file_path.rfind('\\');
-		size_t ext_index = file_path.rfind('.');
+		uint64_t last_backslash = file_path.rfind('\\');
+		uint64_t ext_index = file_path.rfind('.');
 		if (ext_index > last_backslash) {
 			std::string ext = file_path.substr(ext_index + 1);
 			for (int i = ext.size() - 1; i >= 0; --i) {

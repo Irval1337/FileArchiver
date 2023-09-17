@@ -2,7 +2,7 @@
 
 HuffmanCoder::Node* HuffmanCoder::generate_tree(std::vector<uint8_t>& file_buff) {
 	std::vector<int> freq(256, 0);
-	for (size_t i = 0; i < file_buff.size(); ++i) {
+	for (uint64_t i = 0; i < file_buff.size(); ++i) {
 		++freq[file_buff[i]];
 	}
 

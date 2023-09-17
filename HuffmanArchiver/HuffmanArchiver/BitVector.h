@@ -2,14 +2,14 @@
 
 class BitVector {
 private:
-	size_t _value;
-	size_t _sz;
+	uint64_t _value;
+	uint64_t _sz;
 public:
 	BitVector() {
 		_value = 0;
 		_sz = 0;
 	}
-	size_t size() {
+	uint64_t size() {
 		return _sz;
 	}
 	void push_back(bool val) {
@@ -25,7 +25,7 @@ public:
 		_value = (_value >> 1) | ((1LL << 63) * val);
 		++_sz;
 	}
-	void set(size_t ind, bool val) {
+	void set(uint64_t ind, bool val) {
 		if (this->operator[](ind))
 			_value ^= 1LL << (63 - ind);
 		_value |= (1LL << (63 - ind)) * val;
@@ -33,11 +33,11 @@ public:
 	bool empty() {
 		return _sz == 0;
 	}
-	size_t value() {
+	uint64_t value() {
 		return _value;
 	}
 
-	bool operator[](size_t ind) {
+	bool operator[](uint64_t ind) {
 		return (_value >> (63 - ind)) & 1;
 	}
 };
