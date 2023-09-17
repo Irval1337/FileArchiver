@@ -46,6 +46,14 @@ public:
 		}
 		return bits;
 	}
+
+	size_t from_delta_code() {
+		int n = 0;
+		while (get_next_bit() == 0) {
+			++n;
+		}
+		return get_from_n_bits(get_from_n_bits(n));
+	}
 private:
 	uint8_t _curr_byte;
 	int _curr_pos;

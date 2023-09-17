@@ -92,30 +92,46 @@ void write_zip(std::vector<uint8_t>& buffer, FileWriter& writer, bool is_dynamic
 	}
 }
 
-void read_unzip(FileReader& reader, FileWriter& writer) {
+void read_unzip(FileReader& reader, FileWriter& writer, bool is_dynamic) {
 	int sz = reader.get_from_n_bits(16);
 	std::vector<uint8_t> vec(1);
 	std::vector<std::vector<uint8_t>> bytes;
+	std::vector<std::vector<uint8_t>> alph;
 	for (int i = 0; i < sz; ++i) {
 		uint8_t byte = reader.get_from_n_bits(8);
 		vec[0] = byte;
 		bytes.push_back(vec);
+		alph.push_back(vec);
 	}
 
 	int bits_count = get_bits(bytes.size());
 	int len = reader.get_from_n_bits(32);
 	vec.clear();
 	int prev = -1;
+	bool first = true;
 	for (int i = 0; i < len;) {
-		int code = reader.get_from_n_bits(bits_count);
+		if (!is_dynamic && bits_count > 16) {
+			bytes = alph;
+			bits_count = get_bits(bytes.size());
+			first = true;
+		}
+
+		int code;
+		if (!is_dynamic)
+			code = reader.get_from_n_bits(bits_count);
+		else
+			code = reader.from_delta_code();
 		int curr, add;
+		bool need_to_add = true;
 		if (code >= bytes.size()) {
-			std::vector<uint8_t> vec_curr = bytes.back();
-			vec_curr.push_back(bytes.back()[0]);
+			std::vector<uint8_t> vec_curr = bytes[prev];
+			vec_curr.push_back(bytes[prev][0]);
+			bytes.push_back(vec_curr);
 			for (int j = 0; j < vec_curr.size(); ++j)
 				writer.write_bits(writer.get_bits(vec_curr[j], 8));
 			add = vec_curr.size();
 			curr = bytes.size() - 1;
+			need_to_add = false;
 		}
 		else {
 			for (int j = 0; j < bytes[code].size(); ++j)
@@ -124,15 +140,17 @@ void read_unzip(FileReader& reader, FileWriter& writer) {
 			curr = code;
 		}
 		
-		if (i == 0) {
+		if (first) {
 			i += add;
 			bits_count = get_bits(bytes.size() + 1);
 			prev = curr;
+			first = false;
 			continue;
 		}
 		std::vector<uint8_t> vec_curr = bytes[prev];
 		vec_curr.push_back(bytes[curr][0]);
-		bytes.push_back(vec_curr);
+		if (need_to_add)
+			bytes.push_back(vec_curr);
 		prev = curr;
 		bits_count = get_bits(bytes.size() + 1);
 		i += add;
@@ -140,10 +158,10 @@ void read_unzip(FileReader& reader, FileWriter& writer) {
 }
 
 int main() {
-	FileWriter w("C:\\1\\3.txt");
+	FileWriter w("C:\\1\\3.jpg");
 	FileReader r("C:\\1\\2.txt");
-	read_unzip(r, w);
-	/*auto bytes = get_file_bytes("C:\\1\\1.txt");
+	read_unzip(r, w, true);
+	/*auto bytes = get_file_bytes("C:\\1\\555.jpg");
 	FileWriter w("C:\\1\\2.txt");
-	write_zip(bytes, w, false);*/
+	write_zip(bytes, w, true);*/
 }
