@@ -34,11 +34,23 @@ public:
 
 	BitVector to_delta_code(uint64_t x) {
 		BitVector x_bits, len_bits;
-		for (int i = log2(x); i >= 0; --i) {
-			x_bits.push_back((x >> i) & 1);
+		bool got = false;
+		for (int i = 63; i >= 0; --i) {
+			if (((x >> i) & 1) == 1 && !got) got = true;
+			if (((x >> i) & 1) == 1 || got)
+				x_bits.push_back((x >> i) & 1);
 		}
-		for (int i = log2(x_bits.size()); i >= 0; --i) {
-			len_bits.push_back((x_bits.size() >> i) & 1);
+		got = false;
+		x = x_bits.size();
+		for (int i = 63; i >= 0; --i) {
+			if (((x >> i) & 1) == 1 && !got) got = true;
+			if (((x >> i) & 1) == 1 || got)
+				len_bits.push_back((x >> i) & 1);
+		}
+
+		if (x == 0) {
+			x_bits.push_back(0);
+			len_bits.push_back(1);
 		}
 
 		BitVector res = to_gamma_code(len_bits);

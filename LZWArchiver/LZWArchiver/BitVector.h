@@ -15,9 +15,9 @@ public:
 		return _sz;
 	}
 	void push_back(bool val) {
-		if (_sz % 64 == 0)
+		if (_sz % 64 == 0 && _sz != 0)
 			_value.push_back(0);
-		int j = _sz / 64;
+		uint64_t j = _sz / 64;
 		_value[j] |= (1LL << (63 - (_sz - j * 64))) * val;
 		++_sz;
 	}
@@ -29,7 +29,7 @@ public:
 	}
 
 	bool operator[](uint64_t ind) {
-		int j = ind / 64;
-		return (_value[j] >> (63 - (ind - 64 * j))) & 1;
+		uint64_t j = ind / 64;
+		return (_value[j] >> (63 - (ind - 64LL * j))) & 1;
 	}
 };

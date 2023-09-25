@@ -43,7 +43,7 @@ std::string get_file_save_path(std::string extension) {
 }
 
 inline int get_bits(int size) {
-	int lg = log2(size + 1);
+	uint64_t lg = log2(size + 1);
 	if ((1LL << lg) < size + 1)
 		++lg;
 	return lg;
@@ -95,7 +95,8 @@ void write_zip(std::vector<uint8_t>& buffer, FileWriter& writer, bool is_dynamic
 			tr.add(vec.begin(), vec.end(), tr.get_size(), nullptr);
 			vec.clear();
 			prev = nullptr;
-		} else {
+		}
+		else {
 			prev = ptr;
 			++i;
 		}
@@ -118,7 +119,10 @@ void write_zip(std::vector<uint8_t>& buffer, FileWriter& writer, bool is_dynamic
 	}
 
 	if (!vec.empty()) {
-		bits = writer.get_bits(*prev->get_code(), bits_count);
+		if (!is_dynamic)
+			bits = writer.get_bits(*prev->get_code(), bits_count);
+		else
+			bits = writer.to_delta_code(*prev->get_code());
 		writer.write_bits(bits);
 	}
 }
@@ -136,8 +140,8 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(FileReader& reader) {
 		alph.push_back(vec);
 	}
 
-	int bits_count = get_bits(bytes.size());
-	int len = reader.get_from_n_bits(32);
+	uint64_t bits_count = get_bits(bytes.size());
+	uint64_t len = reader.get_from_n_bits(32);
 	vec.clear();
 	int prev = -1;
 	bool first = true;
@@ -153,7 +157,7 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(FileReader& reader) {
 			first = true;
 		}
 
-		int code;
+		uint64_t code;
 		if (!is_dynamic)
 			code = reader.get_from_n_bits(bits_count);
 		else
@@ -186,13 +190,14 @@ std::pair<std::vector<uint8_t>, std::string> read_unzip(FileReader& reader) {
 						++zeros;
 					else
 						extension.push_back((char)bytes[code][j]);
-				} else
+				}
+				else
 					file_bytes.push_back(bytes[code][j]);
 			}
 			add = bytes[code].size();
 			curr = code;
 		}
-		
+
 		if (first) {
 			i += add;
 			bits_count = get_bits(bytes.size() + 1);
@@ -244,14 +249,16 @@ void run(std::string operation, std::string file_path, bool mode) {
 		FileWriter writer(get_file_save_path("kalov"));
 		write_zip(file_buff, writer, mode);
 		std::cout << "Done\n";
-	} else if (operation == "unzip") {
+	}
+	else if (operation == "unzip") {
 		FileReader reader(file_path);
 		std::pair<std::vector<uint8_t>, std::string> file_unzipped = read_unzip(reader);
 		std::ofstream out(get_file_save_path(file_unzipped.second), std::ios::binary);
 		out.write((char*)&file_unzipped.first[0], file_unzipped.first.size());
 		out.close();
 		std::cout << "Done\n";
-	} else {
+	}
+	else {
 		std::cout << "Invalid operation type\n";
 		return;
 	}
@@ -285,7 +292,7 @@ int main(int argc, char* argv[]) {
 			std::cin >> mode;
 		}
 		std::cin.ignore();
-		
+
 		std::getline(std::cin, path);
 
 		if (path[0] == '\"') path.erase(path.begin());
